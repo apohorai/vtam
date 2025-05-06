@@ -1,15 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Character Screen Editor</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <h1>Character Screen Editor</h1>
-  <div class="grid" id="grid"></div>
+<h3>Color Picker</h3>
+<div>
+  <label for="bg-color">Background Color:</label>
+  <select id="bg-color">
+    <option value="00">Default</option>
+    <option value="F1" style="background-color: blue; color: white;">Blue</option>
+    <option value="F2" style="background-color: red; color: white;">Red</option>
+    <option value="F3" style="background-color: pink; color: black;">Pink</option>
+    <option value="F4" style="background-color: green; color: white;">Green</option>
+    <option value="F5" style="background-color: turquoise; color: black;">Turquoise</option>
+    <option value="F6" style="background-color: yellow; color: black;">Yellow</option>
+    <option value="F7" style="background-color: white; color: black;">White</option>
+  </select>
 
-  <script src="app.js"></script>
-</body>
-</html>
+  <label for="char-color">Character Color:</label>
+  <select id="char-color">
+    <option value="00">Default</option>
+    <option value="F1" style="color: blue;">Blue</option>
+    <option value="F2" style="color: red;">Red</option>
+    <option value="F3" style="color: pink;">Pink</option>
+    <option value="F4" style="color: green;">Green</option>
+    <option value="F5" style="color: turquoise;">Turquoise</option>
+    <option value="F6" style="color: yellow;">Yellow</option>
+    <option value="F7" style="color: white;">White</option>
+  </select>
+</div>
