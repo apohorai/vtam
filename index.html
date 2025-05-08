@@ -1,0 +1,50 @@
+            continue;
+          }
+          const hexCode = asciiCharToEBCDICHex(char);
+          const bufferAddress = calculateBufferAddress(r + 1, c + 1);
+          const binary = calculateBinaryRepresentation(bufferAddress);
+          const [group1, group2] = splitBinaryIntoGroups(binary);
+          const hexValue1 = hexMapping[group1] || '??';
+          const hexValue2 = hexMapping[group2] || '??';
+          if (!lastCharWasNonSpace) {
+            currentRun = {
+              coords: `(${r},${c})`,
+              hexes: [hexValue1, hexValue2],
+              ebcids: [hexCode]
+            };
+          } else {
+            currentRun.ebcids.push(hexCode);
+          }
+          lastCharWasNonSpace = true;
+          if (c === columns - 1 && currentRun) {
+            runs.push(currentRun);
+            currentRun = null;
+          }
+        }
+        const lineStr = runs.map(run => {
+          const hexPart = debug
+            ? `${run.hexes[0]},${run.hexes[1]}`
+            : `${run.hexes[0]}${run.hexes[1]}`;
+          const ebcidPart = run.ebcids.join(',');
+          return `${run.coords} ${hexPart} ${ebcidPart}`;
+        }).join(' ');
+        lines.push(lineStr);
+      }
+      ebcdicOutput.value = lines.join('\n');
+    }
+    createGrid();
+    createSmallGrid();
+    if (grid.rows.length && grid.rows[0].cells.length) selectCell(grid.rows[0].cells[0]);
+    if (smallTable.rows.length && smallTable.rows[0].cells.length) selectSmallCell(smallTable.rows[0].cells[0]);
+    updateEbcdicOutput();
+    debugToggle.addEventListener('click', () => {
+      debug = !debug;
+      debugToggle.classList.toggle('active', debug);
+      debugToggle.textContent = debug ? 'Debug: ON' : 'Debug: OFF';
+      debugToggle.setAttribute('aria-pressed', debug.toString());
+      updateEbcdicOutput();
+    });
+  })();
+</script>
+</body>
+</html>
