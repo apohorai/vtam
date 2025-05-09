@@ -1,3 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Character Image Designer 80x24 with Small Matrix and Draw Line</title>
+<style>
+  body {
+    margin: 0; font-family: 'Consolas', monospace, monospace;
+    background-color: #111; color: #ddd;
+    display: flex; flex-direction: column; align-items: center;
+    height: 100vh; overflow: hidden;
+  }
+  h1 {
+    margin: 1rem 0 0.5rem;
+  }
+  #palette-container {
+    display: flex; justify-content: center; gap: 2rem; margin-bottom: 0.75rem;
+    user-select: none;
+  }
+  .palette {
+    border: 1px solid #555; padding: 0.5rem; border-radius: 6px;
+    background: #222;
+  }
+  .palette h2 {
+    font-size: 1rem; font-weight: normal; margin: 0 0 0.5rem 0; text-align: center;
+  }
+  .colors {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+  }
+  .color-btn {
+    cursor: pointer; width: 22px; height: 22px; border-radius: 3px;
+    border: 1px solid #555; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #222; user-select: none; box-sizing: border-box;
+    position: relative;
+  }
+  .color-btn.selected {
+    border: 3px solid #fff;
+  }
+  .color-label {
+    font-size: 8px; position: absolute; bottom: -14px; width: 100%;
+    text-align: center; color: #ccc; user-select: none;
+  }
+  #grid-container {
+    width: 100%; display: flex;
+  }
+  #controls-container {
+    width: 20%; display: flex; flex-direction: column; justify-content: flex-start;
+    height: 100%;
+  }
+  #status-line {
+    width: 100%; background-color: #222; color: #ddd; padding: 0.5rem;
+    text-align: center; font-family: 'Consolas', monospace, monospace; font-size: 14px;
+  }
+  #button-container {
+    display: flex; flex-direction: column; justify-content: flex-start;
+  }
+  #small-matrix {
+    margin-top: 10px; width: 14px; height: 22px; border-collapse: collapse;
+  }
+  table#small-matrix td {
+    width: 14px; height: 22px; text-align: center; vertical-align: middle;
+    font-size: 16px; font-weight: normal; cursor: pointer;
+    padding: 0; line-height: 22px; font-family: 'Consolas', monospace, monospace;
+    user-select: none; outline-offset: -2px; border: 1px solid rgba(255,255,255,0.2);
+  }
+  table#small-matrix td:focus {
+    outline: 2px solid yellow;
+  }
+  table#grid {
+    width: 80%; border-collapse: collapse; margin: 0 auto; user-select: none; outline: none;
+  }
+  table#grid td {
+    width: 14px; height: 22px; text-align: center; vertical-align: middle;
+    font-size: 16px; font-weight: normal; cursor: pointer;
+    padding: 0; line-height: 22px;
+    font-family: 'Consolas', monospace, monospace; user-select: none;
+    outline-offset: -2px; border: 1px solid rgba(255,255,255,0.2);
+  }
+  table#grid td:focus {
+    outline: 2px solid yellow;
+  }
+  #ebcdic-output-container {
+    width: 90vw; max-width: 1100px; margin: 0.5rem 1rem 1rem 1rem;
+  }
+  #ebcdic-output {
+    width: 100%; height: 440px; background: #000; color: #0f0;
+    font-family: 'Consolas', monospace, monospace; font-size: 14px;
+    border: 2px solid #333; padding: 0.5rem; resize: vertical;
+    overflow: auto; white-space: pre-wrap;
+  }
+  #debug-toggle {
+    margin-bottom: 0.3rem; cursor: pointer; border: 1px solid #555;
+    background-color: #222; color: #ddd; padding: 0.3rem 0.6rem;
+    border-radius: 6px; user-select: none; font-family: 'Consolas', monospace, monospace;
+    font-size: 14px;
+  }
+  #debug-toggle.active {
+    border-color: #0f0; color: #0f0; font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>Character Image Designer (80x24) with Small Matrix and Draw Line</h1>
+
+<div id="palette-container">
+  <div class="palette" id="fg-palette">
+    <h2>Foreground</h2>
+    <div class="colors">
+      <div class="color-btn" data-color="default" data-fg="#ddd" data-bg="" title="00 Default">00<div class="color-label">Default</div></div>
+      <div class="color-btn" data-color="blue" data-fg="#4A90E2" data-bg="" style="background:#4A90E2;" title="F1 Blue">F1<div class="color-label" style="color:#4A90E2">Blue</div></div>
+      <div class="color-btn" data-color="red" data-fg="#E94B4B" data-bg="" style="background:#E94B4B;" title="F2 Red">F2<div class="color-label" style="color:#E94B4B">Red</div></div>
+      <div class="color-btn" data-color="pink" data-fg="#E58BBF" data-bg="" style="background:#E58BBF;" title="F3 Pink">F3<div class="color-label" style="color:#E58BBF">Pink</div></div>
+      <div class="color-btn" data-color="green" data-fg="#4DBA65" data-bg="" style="background:#4DBA65;" title="F4 Green">F4<div class="color-label" style="color:#4DBA65">Green</div></div>
+      <div class="color-btn" data-color="turquoise" data-fg="#30C9C9" data-bg="" style="background:#30C9C9;" title="F5 Turquoise">F5<div class="color-label" style="color:#30C9C9">Turquoise</div></div>
+      <div class="color-btn" data-color="yellow" data-fg="#F5E050" data-bg="" style="background:#F5E050;color:#222" title="F6 Yellow">F6<div class="color-label" style="color:#F5E050">Yellow</div></div>
+      <div class="color-btn" data-color="white" data-fg="#FFFFFF" data-bg="" style="background:#fff;color:#222" title="F7 White">F7<div class="color-label" style="color:#fff">White</div></div>
+    </div>
+  </div>
+
+  <div class="palette" id="bg-palette">
+    <h2>Background</h2>
+    <div class="colors">
+      <div class="color-btn" data-color="default" data-bg="" style="background:#000" title="00 Default">00<div class="color-label" style="color:#aaa">Default</div></div>
+      <div class="color-btn" data-color="blue" data-bg="#4A90E2" style="background:#4A90E2;" title="F1 Blue">F1<div class="color-label" style="color:#4A90E2">Blue</div></div>
+      <div class="color-btn" data-color="red" data-bg="#E94B4B" style="background:#E94B4B;" title="F2 Red">F2<div class="color-label" style="color:#E94B4B">Red</div></div>
+      <div class="color-btn" data-color="pink" data-bg="#E58BBF" style="background:#E58BBF;" title="F3 Pink">F3<div class="color-label" style="color:#E58BBF">Pink</div></div>
+      <div class="color-btn" data-color="green" data-bg="#4DBA65" style="background:#4DBA65;" title="F4 Green">F4<div class="color-label" style="color:#4DBA65">Green</div></div>
+      <div class="color-btn" data-color="turquoise" data-bg="#30C9C9" style="background:#30C9C9;" title="F5 Turquoise">F5<div class="color-label" style="color:#30C9C9">Turquoise</div></div>
+      <div class="color-btn" data-color="yellow" data-bg="#F5E050" style="background:#F5E050;color:#222" title="F6 Yellow">F6<div class="color-label" style="color:#F5E050">Yellow</div></div>
+      <div class="color-btn" data-color="white" data-bg="#FFFFFF" style="background:#fff;color:#222" title="F7 White">F7<div class="color-label" style="color:#fff">White</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="grid-container" tabindex="0">
+  <div id="controls-container" style="width: 20%; display: flex; flex-direction: column; justify-content: flex-start; height: 100%;">
+    <div id="status-line">
+      <span id="status-message">Position: (1, 1)</span>
+    </div>
+    <div id="button-container">
+      <button id="draw-line" title="Draw a line">Draw Line</button>
+      <table id="small-matrix" cellspacing="0" cellpadding="0" aria-label="1x1 Matrix" role="grid" tabindex="-1" style="width: 14px; height: 22px; border-collapse: collapse;">
+        <tr></tr>
+      </table>
+    </div>
+    <div id="start-position" style="margin-top: 10px; text-align: center; color: #ddd; font-family: 'Consolas', monospace, monospace; font-size: 14px;">
+      Start Position: (0, 0)
+    </div>
+    <div id="end-position" style="text-align: center; color: #ddd; font-family: 'Consolas', monospace, monospace; font-size: 14px;">
+      End Position: (0, 0)
+    </div>
+  </div>
+
+  <table id="grid" cellspacing="0" cellpadding="0" aria-label="Character Image Designer Grid" role="grid" tabindex="-1" style="width: 80%;"></table>
+</div>
+
+<div id="ebcdic-output-container">
+  <button id="debug-toggle" aria-pressed="false" title="Toggle Debug Output">Debug: OFF</button>
+  <label for="ebcdic-output" style="color:#aaa;user-select:none;">EBCDIC Hex Values (comma separated, line by line):</label>
+  <textarea id="ebcdic-output" readonly aria-live="polite" aria-label="EBCDIC hex values output"></textarea>
+</div>
+
+<script>
+  (function() {
+    const columns = 80;
+    const rows = 24;
+    const grid = document.getElementById("grid");
+    const smallTable = document.getElementById("small-matrix");
+    const ebcdicOutput = document.getElementById("ebcdic-output");
+    const debugToggle = document.getElementById("debug-toggle");
+
+    let debug = false;
+    let selectedCell = null;
+    let selectedSmallCell = null;
+
+    let fgColor = "default";
+    let fgColorValue = "#ddd";
+    let bgColor = "default";
+    let bgColorValue = "";
+
+    const fgPalette = document.getElementById("fg-palette");
+    const bgPalette = document.getElementById("bg-palette");
+
+    const asciiToEBCDIC = {
+      ' ': 0x40, '!': 0x5A, '"': 0x7F, '#': 0x7B, '$': 0x5B, '%': 0x6C, '&': 0x50,
+      "'": 0x7D, '(': 0x4D, ')': 0x5D, '*': 0x5C, '+': 0x4E, ',': 0x6B, '-': 0x60,
+      '.': 0x4B, '/': 0x61, '0': 0xF0, '1': 0xF1, '2': 0xF2, '3': 0xF3, '4': 0xF4,
+      '5': 0xF5, '6': 0xF6, '7': 0xF7, '8': 0xF8, '9': 0xF9, ':': 0x7A, ';': 0x5E,
+      '<': 0x4C, '=': 0x7E, '>': 0x6E, '?': 0x6F, '@': 0x7C, 
+      'A': 0xC1, 'B': 0xC2, 'C': 0xC3, 'D': 0xC4, 'E': 0xC5, 'F': 0xC6, 'G': 0xC7,
+      'H': 0xC8, 'I': 0xC9, 'J': 0xD1, 'K': 0xD2, 'L': 0xD3, 'M': 0xD4, 'N': 0xD5,
+      'O': 0xD6, 'P': 0xD7, 'Q': 0xD8, 'R': 0xD9, 'S': 0xE2, 'T': 0xE3, 'U': 0xE4,
+      'V': 0xE5, 'W': 0xE6, 'X': 0xE7, 'Y': 0xE8, 'Z': 0xE9,
+      'a': 0x81, 'b': 0x82, 'c': 0x83, 'd': 0x84, 'e': 0x85, 'f': 0x86, 'g': 0x87,
+      'h': 0x88, 'i': 0x89, 'j': 0x91, 'k': 0x92, 'l': 0x93, 'm': 0x94, 'n': 0x95,
+      'o': 0x96, 'p': 0x97, 'q': 0x98, 'r': 0x99, 's': 0xA2, 't': 0xA3, 'u': 0xA4,
+      'v': 0xA5, 'w': 0xA6, 'x': 0xA7, 'y': 0xA8, 'z': 0xA9,
+      '\t': 0x05, '\n': 0x25, '\r': 0x0D
+    };
+
+    const hexMapping = {
+      '000000': '40', '000001': 'C1', '000010': 'C2', '000011': 'C3', '000100': 'C4', 
+      '000101': 'C5', '000110': 'C6', '000111': 'C7', '001000': 'C8', '001001': 'C9',
+      '001010': '4A', '001011': '4B', '001100': '4C', '001101': '4D', '001110': '4E', 
+      '001111': '4F', '010000': '50', '010001': 'D1', '010010': 'D2', '010011': 'D3',
+      '010100': 'D4', '010101': 'D5', '010110': 'D6', '010111': 'D7', '011000': 'D8', 
+      '011001': 'D9', '011010': '5A', '011011': '5B', '011100': '5C', '011101': '5D', 
+      '011110': '5E', '011111': '5F', '100000': '60', '100001': '61', '100010': 'E2', 
+      '100011': 'E3', '100100': 'E4', '100101': 'E5', '100110': 'E6', '100111': 'E7',
+      '101000': 'E8', '101001': 'E9', '101010': '6A', '101011': '6B', '101100': '6C', 
+      '101101': '6D', '101110': '6E', '101111': '6F', '110000': 'F0', '110001': 'F1',
+      '110010': 'F2', '110011': 'F3', '110100': 'F4', '110101': 'F5', '110110': 'F6', 
+      '110111': 'F7', '111000': 'F8', '111001': 'F9', '111010': '7A', '111011': '7B', 
+      '111100': '7C', '111101': '7D', '111110': '7E', '111111': '7F'
+    };
+
+    function asciiCharToEBCDICHex(char) {
+      let code = asciiToEBCDIC[char];
+      if (typeof code === 'undefined') code = 0x40;
+      return code.toString(16).toUpperCase().padStart(2, '0');
+    }
+
+    function calculateBufferAddress(row, col) {
+      return (row - 1) * 80 + (col - 1);
+    }
+
+    function calculateBinaryRepresentation(bufferAddress) {
+      return bufferAddress.toString(2).padStart(12, '0');
+    }
+
+    function splitBinaryIntoGroups(binary) {
+      return [binary.slice(0, 6), binary.slice(6)];
+    }
+
+    function createGrid() {
+      for (let r = 0; r < rows; r++) {
+        const tr = document.createElement('tr');
+        tr.setAttribute('role', 'row');
+        for (let c = 0; c < columns; c++) {
+          const td = document.createElement('td');
+          td.setAttribute('role', 'gridcell');
+          td.textContent = ' ';
+          td.dataset.fg = 'default';
+          td.dataset.bg = 'default';
+          td.dataset.char = ' ';
+          td.tabIndex = 0;
+          td.addEventListener('click', () => selectCell(td));
+          td.addEventListener('focus', () => selectCell(td));
+          tr.appendChild(td);
+        }
+        grid.appendChild(tr);
+      }
+    }
+
+    function createSmallGrid() {
+      while (smallTable.firstChild) smallTable.removeChild(smallTable.firstChild);
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.setAttribute('role', 'gridcell');
+      td.tabIndex = 0;
+      td.textContent = ' ';
+      td.dataset.fg = 'default';
+      td.dataset.bg = 'default';
+      td.dataset.char = ' ';
+      td.addEventListener('click', () => selectSmallCell(td));
+      td.addEventListener('focus', () => selectSmallCell(td));
+      tr.appendChild(td);
+      smallTable.appendChild(tr);
+    }
+
+    function updateCellStyle(cell) {
+      if (!cell) return;
+      const fgColorMap = {
+        default: '#ddd', blue: '#4A90E2', red: '#E94B4B', pink: '#E58BBF',
+        green: '#4DBA65', turquoise: '#30C9C9', yellow: '#F5E050', white: '#FFFFFF'
+      };
+      const bgColorMap = {
+        default: '', blue: '#4A90E2', red: '#E94B4B', pink: '#E58BBF',
+        green: '#4DBA65', turquoise: '#30C9C9', yellow: '#F5E050', white: '#FFFFFF'
+      };
+      const fg = cell.dataset.fg || 'default';
+      const bg = cell.dataset.bg || 'default';
+      cell.style.color = fgColorMap[fg] || fgColorMap.default;
+      cell.style.backgroundColor = bgColorMap[bg] || '';
+      cell.textContent = cell.dataset.char || ' ';
+    }
+
+    function applyColorsToCell(cell) {
+      if (!cell) return;
+      cell.dataset.fg = fgColor;
+      cell.dataset.bg = bgColor;
+      updateCellStyle(cell);
+      updateEbcdicOutput();
+    }
+
+    function applyCharToCell(cell, char) {
+      if (!cell) return;
+      cell.dataset.char = char;
+      updateCellStyle(cell);
+      updateEbcdicOutput();
+    }
+
+    function drawLine(x0, y0, x1, y1) {
+      const points = [];
+      const dx = Math.abs(x1 - x0);
+      const dy = Math.abs(y1 - y0);
+      const sx = (x0 < x1) ? 1 : -1;
+      const sy = (y0 < y1) ? 1 : -1;
+      let err = dx - dy;
+
+      while (true) {
+        points.push({ x: x0, y: y0 });
+
+        if (x0 === x1 && y0 === y1) break;
+        const err2 = err << 1;
+        if (err2 > -dy) { err -= dy; x0 += sx; }
+        if (err2 < dx) { err += dx; y0 += sy; }
+      }
+
+      points.forEach(point => {
+        const cell = grid.rows[point.y] && grid.rows[point.y].cells[point.x];
+        if (!cell) return;
+        cell.dataset.char = '*';
+        updateCellStyle(cell);
+      });
+      updateEbcdicOutput();
+    }
+
+    let isDrawingMode = false;
+    let startPositionSet = false;
+    let startCoords = null;
+
+    document.getElementById('draw-line').addEventListener('click', () => {
+      isDrawingMode = true;
+      startPositionSet = false;
+      startCoords = null;
+      document.getElementById('status-message').textContent = "Select Start Position";
+    });
+
+    function selectCell(cell) {
+      const rowIndex = cell.parentElement.rowIndex;
+      const cellIndex = cell.cellIndex;
+
+      if (isDrawingMode) {
+        if (!startPositionSet) {
+          startCoords = { row: rowIndex, col: cellIndex };
+          startPositionSet = true;
+          document.getElementById('start-position').textContent = `Start Position: (${rowIndex + 1}, ${cellIndex + 1})`;
+          document.getElementById('status-message').textContent = "Select End Position";
+        } else {
+          if (startCoords.row === rowIndex && startCoords.col === cellIndex) {
+            document.getElementById('status-message').textContent = "End Position cannot be same as Start Position.";
+            return;
+          }
+          document.getElementById('end-position').textContent = `End Position: (${rowIndex + 1}, ${cellIndex + 1})`;
+          isDrawingMode = false;
+          document.getElementById('status-message').textContent = "Drawing complete";
+
+          drawLine(startCoords.col, startCoords.row, cellIndex, rowIndex);
+          startCoords = null;
+          startPositionSet = false;
+        }
+      } else {
+        if (selectedCell && selectedCell !== cell) selectedCell.classList.remove('selected');
+        if (selectedSmallCell) {
+          selectedSmallCell.classList.remove('selected');
+          selectedSmallCell = null;
+        }
+        selectedCell = cell;
+        selectedCell.classList.add('selected');
+        selectedCell.focus();
+        applyColorsToCell(selectedCell);
+        document.getElementById('status-message').textContent = `Position: (${rowIndex + 1}, ${cellIndex + 1})`;
+      }
+    }
+
+    function selectSmallCell(cell) {
+      if (selectedSmallCell && selectedSmallCell !== cell) selectedSmallCell.classList.remove('selected');
+      if (selectedCell) {
+        selectedCell.classList.remove('selected');
+        selectedCell = null;
+      }
+      selectedSmallCell = cell;
+      selectedSmallCell.classList.add('selected');
+      selectedSmallCell.focus();
+      applyColorsToCell(selectedSmallCell);
+      document.getElementById('status-message').textContent = `Position: (1, ${cell.cellIndex + 1})`;
+    }
+
+    document.getElementById('grid-container').addEventListener('keydown', e => {
+      if (!selectedCell) return;
+      const tr = selectedCell.parentElement;
+      const rowIndex = tr.rowIndex;
+      const cellIndex = selectedCell.cellIndex;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace', 'Delete'].includes(e.key) || e.key.length === 1) {
+        e.preventDefault();
+      }
+      if (e.key.length === 1 && e.key >= ' ' && e.key !== ' ') {
+        applyCharToCell(selectedCell, e.key);
+        applyColorsToCell(selectedCell);
+        let nextCell = null;
+        if (cellIndex < columns - 1) nextCell = tr.cells[cellIndex + 1];
+        else if (rowIndex < rows - 1) nextCell = grid.rows[rowIndex + 1].cells[0];
+        if (nextCell) selectCell(nextCell);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        applyCharToCell(selectedCell, ' ');
+        applyColorsToCell(selectedCell);
+      } else if (e.key === 'ArrowLeft') {
+        if (cellIndex > 0) selectCell(tr.cells[cellIndex - 1]);
+        else if (rowIndex > 0) selectCell(grid.rows[rowIndex - 1].cells[columns - 1]);
+      } else if (e.key === 'ArrowRight') {
+        if (cellIndex < columns - 1) selectCell(tr.cells[cellIndex + 1]);
+        else if (rowIndex < rows - 1) selectCell(grid.rows[rowIndex + 1].cells[0]);
+      } else if (e.key === 'ArrowUp') {
+        if (rowIndex > 0) selectCell(grid.rows[rowIndex - 1].cells[cellIndex]);
+      } else if (e.key === 'ArrowDown') {
+        if (rowIndex < rows - 1) selectCell(grid.rows[rowIndex + 1].cells[cellIndex]);
+      }
+    });
+
+    smallTable.addEventListener('keydown', e => {
+      if (!selectedSmallCell) return;
+      if (['Backspace', 'Delete'].includes(e.key) || (e.key.length === 1 && e.key >= ' ' && e.key !== ' ')) {
+        e.preventDefault();
+      }
+      if (e.key.length === 1 && e.key >= ' ' && e.key !== ' ') {
+        applyCharToCell(selectedSmallCell, e.key);
+        applyColorsToCell(selectedSmallCell);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        applyCharToCell(selectedSmallCell, ' ');
+        applyColorsToCell(selectedSmallCell);
+      }
+    });
+
+    fgPalette.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        fgColor = btn.dataset.color;
+        fgColorValue = btn.dataset.fg || fgColorValue;
+        updatePaletteSelection(fgColor, bgColor);
+        if (selectedCell) applyColorsToCell(selectedCell);
+        else if (selectedSmallCell) applyColorsToCell(selectedSmallCell);
+      });
+    });
+
+    bgPalette.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bgColor = btn.dataset.color;
+        bgColorValue = btn.dataset.bg || bgColorValue;
+        updatePaletteSelection(fgColor, bgColor);
+        if (selectedCell) applyColorsToCell(selectedCell);
+        else if (selectedSmallCell) applyColorsToCell(selectedSmallCell);
+      });
+    });
+
+    function updatePaletteSelection(fg, bg) {
+      for (const btn of fgPalette.querySelectorAll('.color-btn')) {
+        btn.classList.toggle('selected', btn.dataset.color === fg);
+      }
+      for (const btn of bgPalette.querySelectorAll('.color-btn')) {
+        btn.classList.toggle('selected', btn.dataset.color === bg);
+      }
+    }
+
+    function updateEbcdicOutput() {
+      const lines = [];
+      for (let r = 0; r < rows; r++) {
+        const rowCells = grid.rows[r].cells;
+        const runs = [];
+        let currentRun = null;
+        let lastCharWasNonSpace = false;
+
+        for (let c = 0; c < columns; c++) {
+          const char = rowCells[c].dataset.char || ' ';
+          if (char === ' ') {
+            if (currentRun) { runs.push(currentRun); currentRun = null; }
+            lastCharWasNonSpace = false;
             continue;
           }
           const hexCode = asciiCharToEBCDICHex(char);
@@ -6,6 +484,7 @@
           const [group1, group2] = splitBinaryIntoGroups(binary);
           const hexValue1 = hexMapping[group1] || '??';
           const hexValue2 = hexMapping[group2] || '??';
+
           if (!lastCharWasNonSpace) {
             currentRun = {
               coords: `(${r},${c})`,
@@ -32,11 +511,15 @@
       }
       ebcdicOutput.value = lines.join('\n');
     }
+
     createGrid();
     createSmallGrid();
+
     if (grid.rows.length && grid.rows[0].cells.length) selectCell(grid.rows[0].cells[0]);
     if (smallTable.rows.length && smallTable.rows[0].cells.length) selectSmallCell(smallTable.rows[0].cells[0]);
+
     updateEbcdicOutput();
+
     debugToggle.addEventListener('click', () => {
       debug = !debug;
       debugToggle.classList.toggle('active', debug);
@@ -44,6 +527,7 @@
       debugToggle.setAttribute('aria-pressed', debug.toString());
       updateEbcdicOutput();
     });
+
   })();
 </script>
 </body>
