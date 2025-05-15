@@ -11,7 +11,63 @@ document.addEventListener('DOMContentLoaded', () => {
       asm: document.getElementById('mode-asm'),
       asmCode: document.getElementById('mode-asm-code')
     };
-  
+  // Export Grid as JSON
+document.getElementById('export-grid').addEventListener('click', () => {
+  const gridData = [];
+  for (let r = 0; r < rows; r++) {
+    const rowCells = grid.rows[r].cells;
+    const row = [];
+    for (let c = 0; c < columns; c++) {
+      const cell = rowCells[c];
+      row.push({
+        char: cell.dataset.char || '',
+        fg: cell.dataset.fg || 'default',
+        bg: cell.dataset.bg || 'default'
+      });
+    }
+    gridData.push(row);
+  }
+
+  const blob = new Blob([JSON.stringify(gridData)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'grid.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Import Grid from JSON
+document.getElementById('import-trigger').addEventListener('click', () => {
+  document.getElementById('import-grid').click();
+});
+
+document.getElementById('import-grid').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const text = await file.text();
+  try {
+    const gridData = JSON.parse(text);
+    if (!Array.isArray(gridData) || gridData.length !== rows) throw new Error('Invalid format');
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) {
+        const cellData = gridData[r][c];
+        const cell = grid.rows[r].cells[c];
+        cell.dataset.char = cellData.char || '';
+        cell.dataset.fg = cellData.fg || 'default';
+        cell.dataset.bg = cellData.bg || 'default';
+        updateCellStyle(cell);
+      }
+    }
+    updateEbcdicOutput();
+    document.getElementById('status-message').textContent = "Grid imported successfully";
+  } catch (err) {
+    alert("Failed to import grid: " + err.message);
+  }
+});
+
     let debug = false;
     let selectedCell = null;
     let selectedSmallCell = null;
