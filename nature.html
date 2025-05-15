@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nature Character Art with Human and Dog (EBCDIC)</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Consolas', monospace;
+      color: #ddd;
+    }
+    table {
+      border-collapse: collapse;
+      user-select: none;
+      outline: none;
+    }
+    td {
+      width: 14px;
+      height: 22px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 18px;
+      line-height: 22px;
+      cursor: default;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <table aria-label="Nature Character Art" role="grid" aria-readonly="true">
+    <tbody id="art-body"></tbody>
+  </table>
+  <script>
+    const rows = 24;
+    const cols = 80;
+    const tbody = document.getElementById('art-body');
+
+    // Colors used (from your palette)
+    const fgColors = {
+      sun: "#F5E050",
+      cloud: "#E58BBF",
+      sky: "#4A90E2",
+      leaf: "#4DBA65",
+      trunk: "#E94B4B",
+      grass: "#30C9C9",
+      flower: "#E94B4B",
+      humanSkin: "#F5E050",
+      humanCloth: "#4DBA65",
+      dogFur: "#E94B4B",
+      dogSpot: "#30C9C9"
+    };
+    const bgColors = {
+      sky: "#111",
+      grass: "#111"
+    };
+    const space = " ";
+
+    // Initialize empty sky grid
+    const grid = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) {
+        row.push({ char: space, fg: fgColors.sky, bg: bgColors.sky });
+      }
+      grid.push(row);
+    }
+
+    // Sun
+    const sunCenter = {x:70, y:4}, sunRadius = 2;
+    for (let r = sunCenter.y - sunRadius; r <= sunCenter.y + sunRadius; r++) {
+      for (let c = sunCenter.x - sunRadius; c <= sunCenter.x + sunRadius; c++) {
+        if (r>=0 && r<rows && c>=0 && c<cols) {
+          const dx = c - sunCenter.x;
+          const dy = r - sunCenter.y;
+          if (dx*dx + dy*dy <= sunRadius*sunRadius) {
+            grid[r][c] = {char:'0', fg: fgColors.sun, bg: bgColors.sky};
+          }
+        }
+      }
+    }
+
+    // Clouds
+    function drawCloud(baseRow, baseCol) {
+      const cloudPoints = [
+        {r:0,c:0},{r:0,c:1},{r:0,c:2},
+        {r:1,c:-1},{r:1,c:0},{r:1,c:1},{r:1,c:2},{r:1,c:3},
+        {r:2,c:0},{r:2,c:1},{r:2,c:2}
+      ];
+      cloudPoints.forEach(({r,c}) => {
+        let rr=baseRow+r, cc=baseCol+c;
+        if (rr>=0 && rr<rows && cc>=0 && cc<cols)
+          grid[rr][cc] = {char:'C', fg: fgColors.cloud, bg: bgColors.sky};
+      });
+    }
+    drawCloud(2,10);
+    drawCloud(4,17);
+    drawCloud(3,25);
+
+    // Tree trunk (|)
+    for(let r=12;r<=19;r++) {
+      for(let c=36;c<=38;c++) {
+        grid[r][c] = {char:'|', fg: fgColors.trunk, bg: fgColors.trunk};
+      }
+    }
+
+    // Leaves (A)
+    [
+      {r:8,c:34},{r:8,c:35},{r:8,c:36},{r:8,c:37},{r:8,c:38},{r:8,c:39},{r:8,c:40},
+      {r:9,c:33},{r:9,c:34},{r:9,c:35},{r:9,c:36},{r:9,c:37},{r:9,c:38},{r:9,c:39},{r:9,c:40},{r:9,c:41},
+      {r:10,c:34},{r:10,c:35},{r:10,c:36},{r:10,c:37},{r:10,c:38},{r:10,c:39},
+      {r:11,c:35},{r:11,c:36},{r:11,c:37},{r:11,c:38}
+    ].forEach(({r,c}) => {
+      grid[r][c] = {char:'A', fg: fgColors.leaf, bg: fgColors.leaf};
+    });
+
+    // Grass (1)
+    for (let r=20; r<rows; r++) {
+      for (let c=0; c<cols; c++) {
+        grid[r][c] = {char:'1', fg: fgColors.grass, bg: bgColors.grass};
+      }
+    }
+
+    // Flowers (2)
+    [
+      {r:21,c:15},{r:22,c:20},{r:21,c:30},
+      {r:23,c:45},{r:22,c:55},{r:21,c:68}
+    ].forEach(({r,c}) => {
+      if(r-1>=0) grid[r-1][c] = {char:'2', fg: fgColors.flower, bg: bgColors.grass};
+      grid[r][c] = {char:'1', fg: fgColors.grass, bg: bgColors.grass};
+    });
+
+    // Human figure - use EBCDIC letters and symbols
+    // Simple standing figure at (15,10)
+    const humanPattern = [
+      {r:15, c:10, char:'(', fg: fgColors.humanSkin},
+      {r:16, c:10, char:'A', fg: fgColors.humanSkin},
+      {r:17, c:10, char:')', fg: fgColors.humanSkin},
+      {r:16, c:9, char:'*', fg: fgColors.humanCloth},
+      {r:16, c:11, char:'*', fg: fgColors.humanCloth},
+      {r:18, c:9, char:'|', fg: fgColors.humanCloth},
+      {r:18, c:11, char:'|', fg: fgColors.humanCloth},
+      {r:19, c:9, char:'1', fg: fgColors.humanCloth},
+      {r:19, c:11, char:'1', fg: fgColors.humanCloth},
+      {r:20, c:9, char:'1', fg: fgColors.humanCloth},
+      {r:20, c:11, char:'1', fg: fgColors.humanCloth},
+    ];
+    humanPattern.forEach(({r,c,char,fg}) => {
+      if(r>=0 && r<rows && c>=0 && c<cols)
+        grid[r][c] = {char,char, fg, bg: bgColors.sky};
+    });
+
+    // Dog figure - use EBCDIC characters
+    // Simple dog shape at (19,25)
+    const dogPattern = [
+      {r:19, c:25, char:'X', fg: fgColors.dogFur},
+      {r:19, c:26, char:'X', fg: fgColors.dogFur},
+      {r:20, c:24, char:'|', fg: fgColors.dogFur},
+      {r:20, c:25, char:'X', fg: fgColors.dogFur},
+      {r:20, c:26, char:'X', fg: fgColors.dogFur},
+      {r:21, c:24, char:'1', fg: fgColors.dogSpot},
+      {r:21, c:25, char:'X', fg: fgColors.dogFur},
+      {r:21, c:26, char:'X', fg: fgColors.dogFur},
+      {r:21, c:27, char:'|', fg: fgColors.dogFur},
+      {r:22, c:25, char:'X', fg: fgColors.dogFur},
+      {r:22, c:26, char:'X', fg: fgColors.dogFur}
+    ];
+    dogPattern.forEach(({r,c,char,fg}) => {
+      if(r>=0 && r<rows && c>=0 && c<cols)
+        grid[r][c] = {char,char, fg, bg: bgColors.grass};
+    });
+
+
+    // Build table rows/cells
+    for(let r=0; r<rows; r++) {
+      const tr = document.createElement('tr');
+      for(let c=0; c<cols; c++) {
+        const cell = document.createElement('td');
+        const tile = grid[r][c];
+        cell.textContent = tile.char;
+        cell.style.color = tile.fg;
+        cell.style.backgroundColor = tile.bg;
+        tr.appendChild(cell);
+      }
+      tbody.appendChild(tr);
+    }
+  </script>
+</body>
+</html>
