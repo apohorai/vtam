@@ -398,269 +398,138 @@ document.getElementById('import-grid').addEventListener('change', async (e) => {
       }
     });
   
-    function updateEbcdicOutput() {
-      const lines = [];
-      for (let r = 0; r < rows; r++) {
-        const rowCells = grid.rows[r].cells;
-        let currentRun = null;
-        let lastCharWasNonSpace = false;
-        let currentFg = null;
-        let currentBg = null;
-  
-        for (let c = 0; c < columns; c++) {
-          const cell = rowCells[c];
-          const char = cell.dataset.char;
-          const fg = cell.dataset.fg || 'default';
-          const bg = cell.dataset.bg || 'default';
-  
-          if (!char) {
-            if (currentRun) {
-              if (currentMode === 'asm' || currentMode === 'asmCode') {
-                const hexPart = `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
-                if (currentMode === 'asmCode') {
-                  lines.push(`         DC    X'11${hexPart}'`);
-                  lines.push(`         DC    X'2903'`);
-                  lines.push(`         DC    X'C0F0'`);
-                  if (currentRun.bg !== 'default') {
-                    lines.push(`         DC    X'41F2'`);
-                    switch (currentRun.bg) {
-                        case 'default':
-                            lines.push(`         DC    X'42F0'`); // Blue
-                            break;
-                        case 'blue':
-                            lines.push(`         DC    X'42F1'`); // Blue
-                            break;
-                        case 'red':
-                            lines.push(`         DC    X'42F2'`); // Red
-                            break;
-                        case 'pink':
-                            lines.push(`         DC    X'42F3'`); // Pink
-                            break;
-                        case 'green':
-                            lines.push(`         DC    X'42F4'`); // Green
-                            break;
-                        case 'turquoise':
-                            lines.push(`         DC    X'42F5'`); // Turquoise
-                            break;
-                        case 'yellow':
-                            lines.push(`         DC    X'42F6'`); // Yellow
-                            break;
-                        case 'white':
-                            lines.push(`         DC    X'42F7'`); // White
-                            break;
-                        default:
-                            break; // No action for unrecognized colors
-                    }
+  function updateEbcdicOutput() {
+  const lines = [];
 
-
-
-                }
-                else{
-                    lines.push(`         DC    X'4100'`);
-                    switch (currentRun.fg) {
-                        case 'default':
-                            lines.push(`         DC    X'42F0'`); // Blue
-                            break;
-                        case 'blue':
-                            lines.push(`         DC    X'42F1'`); // Blue
-                            break;
-                        case 'red':
-                            lines.push(`         DC    X'42F2'`); // Red
-                            break;
-                        case 'pink':
-                            lines.push(`         DC    X'42F3'`); // Pink
-                            break;
-                        case 'green':
-                            lines.push(`         DC    X'42F4'`); // Green
-                            break;
-                        case 'turquoise':
-                            lines.push(`         DC    X'42F5'`); // Turquoise
-                            break;
-                        case 'yellow':
-                            lines.push(`         DC    X'42F6'`); // Yellow
-                            break;
-                        case 'white':
-                            lines.push(`         DC    X'42F7'`); // White
-                            break;
-                        default:
-                            break; // No action for unrecognized colors
-                    }  
-
-                }
-
-                  
-                } else {
-                  lines.push(`SBA: ${currentRun.coords} ${currentRun.colors} ${hexPart}`);
-                  lines.push(`SFA:`);
-                }
-                
-                if (currentRun.ebcids.length > 20) {
-                    for (let i = 0; i < currentRun.ebcids.length; i += 20) {
-                        const chunk = currentRun.ebcids.slice(i, i + 20);
-                        lines.push(`         DC    X'${chunk.join('')}'`);
-                    }
-                } else {
-                    lines.push(`         DC    X'${currentRun.ebcids.join('')}'`);
-                }
-                
-                
-
-
-                lines.push(`         DC    X'1DF0'`);
-              } else {
-                const hexPart = currentMode === 'debug'
-                  ? `${currentRun.hexes[0]},${currentRun.hexes[1]}`
-                  : `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
-                lines.push(`${currentRun.coords} ${currentRun.colors} ${hexPart} ${currentRun.ebcids.join(',')}`);
-              }
-              currentRun = null;
-              currentFg = null;
-              currentBg = null;
-            }
-            lastCharWasNonSpace = false;
-            continue;
-          }
-  
-          const hexCode = asciiCharToEBCDICHex(char);
-          const bufferAddress = calculateBufferAddress(r + 1, c + 1);
-          const binary = calculateBinaryRepresentation(bufferAddress);
-          const [group1, group2] = splitBinaryIntoGroups(binary);
-          const hexValue1 = hexMapping[group1] || '??';
-          const hexValue2 = hexMapping[group2] || '??';
-  
-          if (!lastCharWasNonSpace || fg !== currentFg || bg !== currentBg) {
-            if (currentRun) {
-              if (currentMode === 'asm' || currentMode === 'asmCode') {
-                const hexPart = `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
-                if (currentMode === 'asmCode') {
-                  lines.push(`         DC    X'11' ${hexPart}'`);
-                  lines.push(`         DC    X'2903'`);
-                  lines.push(`         DC    X'C0F0'`);
-                  if (currentRun.bg !== 'default') {
-                    lines.push(`         DC    X'41F2'`);
-                    switch (currentRun.bg) {
-                        case 'default':
-                            lines.push(`         DC    X'42F0'`); // Blue
-                            break;
-                        case 'blue':
-                            lines.push(`         DC    X'42F1'`); // Blue
-                            break;
-                        case 'red':
-                            lines.push(`         DC    X'42F2'`); // Red
-                            break;
-                        case 'pink':
-                            lines.push(`         DC    X'42F3'`); // Pink
-                            break;
-                        case 'green':
-                            lines.push(`         DC    X'42F4'`); // Green
-                            break;
-                        case 'turquoise':
-                            lines.push(`         DC    X'42F5'`); // Turquoise
-                            break;
-                        case 'yellow':
-                            lines.push(`         DC    X'42F6'`); // Yellow
-                            break;
-                        case 'white':
-                            lines.push(`         DC    X'42F7'`); // White
-                            break;
-                        default:
-                            break; // No action for unrecognized colors
-                    }  
-                }
-                else{
-                    lines.push(`DC    X'4100'`);
-                    switch (currentRun.fg) {
-                        case 'default':
-                            lines.push(`         DC    X'42F0'`); // Blue
-                            break;
-                        case 'blue':
-                            lines.push(`         DC    X'42F1'`); // Blue
-                            break;
-                        case 'red':
-                            lines.push(`         DC    X'42F2'`); // Red
-                            break;
-                        case 'pink':
-                            lines.push(`         DC    X'42F3'`); // Pink
-                            break;
-                        case 'green':
-                            lines.push(`         DC    X'42F4'`); // Green
-                            break;
-                        case 'turquoise':
-                            lines.push(`         DC    X'42F5'`); // Turquoise
-                            break;
-                        case 'yellow':
-                            lines.push(`         DC    X'42F6'`); // Yellow
-                            break;
-                        case 'white':
-                            lines.push(`         DC    X'42F7'`); // White
-                            break;
-                        default:
-                            break; // No action for unrecognized colors
-                    }  
-                }
-
-                } else {
-                  lines.push(`SBA: ${currentRun.coords} ${currentRun.colors} ${hexPart}`);
-                  lines.push(`SFA:`);
-                }
-                
-                if (currentRun.ebcids.length > 20) {
-                    for (let i = 0; i < currentRun.ebcids.length; i += 20) {
-                        const chunk = currentRun.ebcids.slice(i, i + 20);
-                        lines.push(`         DC    X'${chunk.join('')}'`);
-                    }
-                } else {
-                    lines.push(`         DC    X'${currentRun.ebcids.join('')}'`);
-                }
-                
-
-                lines.push(`         DC    X'1DF0'`);
-              } else {
-                const hexPart = currentMode === 'debug'
-                  ? `${currentRun.hexes[0]},${currentRun.hexes[1]}`
-                  : `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
-                lines.push(`${currentRun.coords} ${currentRun.colors} ${hexPart} ${currentRun.ebcids.join(',')}`);
-              }
-            }
-            currentRun = {
-              coords: `(${r},${c})`,
-              colors: `(${fg},${bg})`,
-              fg,
-              bg,
-              hexes: [hexValue1, hexValue2],
-              ebcids: [hexCode]
-            };
-            lastCharWasNonSpace = true;
-            currentFg = fg;
-            currentBg = bg;
-          } else {
-            currentRun.ebcids.push(hexCode);
-          }
-  
-          if (c === columns - 1 && currentRun) {
-            if (currentMode === 'asm' || currentMode === 'asmCode') {
-              const hexPart = `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
-              if (currentMode === 'asmCode') {
-                lines.push(`DC    X'11${hexPart}`);
-              } else {
-                lines.push(`SBA: ${currentRun.coords} ${currentRun.colors} ${hexPart}`);
-              }
-              lines.push(`SFA:`);
-              lines.push(`FG: ${currentRun.fg}`);
-              lines.push(`BG: ${currentRun.bg}`);
-              lines.push(`CHRS: ${currentRun.ebcids.join(',')}`);
-            } else {
-              const hexPart = currentMode === 'debug'
-                ? `${currentRun.hexes[0]},${currentRun.hexes[1]}`
-                : `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
-              lines.push(`${currentRun.coords} ${currentRun.colors} ${hexPart} ${currentRun.ebcids.join(',')}`);
-            }
-            currentRun = null;
-          }
+  function appendAsmRunLines(run) {
+    const hexPart = `${run.hexes[0]}${run.hexes[1]}`;
+    if (currentMode === 'asmCode') {
+      lines.push(`         DC    X'11${hexPart}'`);
+      lines.push(`         DC    X'2903'`);
+      lines.push(`         DC    X'C0F0'`);
+      if (run.bg !== 'default') {
+        lines.push(`         DC    X'41F2'`);
+        switch (run.bg) {
+          case 'default': lines.push(`         DC    X'42F0'`); break;
+          case 'blue': lines.push(`         DC    X'42F1'`); break;
+          case 'red': lines.push(`         DC    X'42F2'`); break;
+          case 'pink': lines.push(`         DC    X'42F3'`); break;
+          case 'green': lines.push(`         DC    X'42F4'`); break;
+          case 'turquoise': lines.push(`         DC    X'42F5'`); break;
+          case 'yellow': lines.push(`         DC    X'42F6'`); break;
+          case 'white': lines.push(`         DC    X'42F7'`); break;
+        }
+      } else {
+        lines.push(`         DC    X'4100'`);
+        switch (run.fg) {
+          case 'default': lines.push(`         DC    X'42F0'`); break;
+          case 'blue': lines.push(`         DC    X'42F1'`); break;
+          case 'red': lines.push(`         DC    X'42F2'`); break;
+          case 'pink': lines.push(`         DC    X'42F3'`); break;
+          case 'green': lines.push(`         DC    X'42F4'`); break;
+          case 'turquoise': lines.push(`         DC    X'42F5'`); break;
+          case 'yellow': lines.push(`         DC    X'42F6'`); break;
+          case 'white': lines.push(`         DC    X'42F7'`); break;
         }
       }
-      ebcdicOutput.value = lines.join('\n');
+    } else {
+      lines.push(`SBA: ${run.coords} ${run.colors} ${hexPart}`);
+      lines.push(`SFA:`);
     }
+
+    if (run.ebcids.length > 20) {
+      for (let i = 0; i < run.ebcids.length; i += 20) {
+        const chunk = run.ebcids.slice(i, i + 20);
+        lines.push(`         DC    X'${chunk.join('')}'`);
+      }
+    } else {
+      lines.push(`         DC    X'${run.ebcids.join('')}'`);
+    }
+
+    lines.push(`         DC    X'1DF0'`);
+  }
+
+  for (let r = 0; r < rows; r++) {
+    const rowCells = grid.rows[r].cells;
+    let currentRun = null;
+    let lastCharWasNonSpace = false;
+    let currentFg = null;
+    let currentBg = null;
+
+    for (let c = 0; c < columns; c++) {
+      const cell = rowCells[c];
+      const char = cell.dataset.char;
+      const fg = cell.dataset.fg || 'default';
+      const bg = cell.dataset.bg || 'default';
+
+      if (!char) {
+        if (currentRun) {
+          if (currentMode === 'asm' || currentMode === 'asmCode') {
+            appendAsmRunLines(currentRun);
+          } else {
+            const hexPart = currentMode === 'debug'
+              ? `${currentRun.hexes[0]},${currentRun.hexes[1]}`
+              : `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
+            lines.push(`${currentRun.coords} ${currentRun.colors} ${hexPart} ${currentRun.ebcids.join(',')}`);
+          }
+          currentRun = null;
+          currentFg = null;
+          currentBg = null;
+        }
+        lastCharWasNonSpace = false;
+        continue;
+      }
+
+      const hexCode = asciiCharToEBCDICHex(char);
+      const bufferAddress = calculateBufferAddress(r + 1, c + 1);
+      const binary = calculateBinaryRepresentation(bufferAddress);
+      const [group1, group2] = splitBinaryIntoGroups(binary);
+      const hexValue1 = hexMapping[group1] || '??';
+      const hexValue2 = hexMapping[group2] || '??';
+
+      if (!lastCharWasNonSpace || fg !== currentFg || bg !== currentBg) {
+        if (currentRun) {
+          if (currentMode === 'asm' || currentMode === 'asmCode') {
+            appendAsmRunLines(currentRun);
+          } else {
+            const hexPart = currentMode === 'debug'
+              ? `${currentRun.hexes[0]},${currentRun.hexes[1]}`
+              : `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
+            lines.push(`${currentRun.coords} ${currentRun.colors} ${hexPart} ${currentRun.ebcids.join(',')}`);
+          }
+        }
+        currentRun = {
+          coords: `(${r},${c})`,
+          colors: `(${fg},${bg})`,
+          fg,
+          bg,
+          hexes: [hexValue1, hexValue2],
+          ebcids: [hexCode]
+        };
+        lastCharWasNonSpace = true;
+        currentFg = fg;
+        currentBg = bg;
+      } else {
+        currentRun.ebcids.push(hexCode);
+      }
+
+      if (c === columns - 1 && currentRun) {
+        if (currentMode === 'asm' || currentMode === 'asmCode') {
+          appendAsmRunLines(currentRun);
+        } else {
+          const hexPart = currentMode === 'debug'
+            ? `${currentRun.hexes[0]},${currentRun.hexes[1]}`
+            : `${currentRun.hexes[0]}${currentRun.hexes[1]}`;
+          lines.push(`${currentRun.coords} ${currentRun.colors} ${hexPart} ${currentRun.ebcids.join(',')}`);
+        }
+        currentRun = null;
+      }
+    }
+  }
+
+  ebcdicOutput.value = lines.join('\n');
+}
+
   
     // Initialization
     createGrid();
